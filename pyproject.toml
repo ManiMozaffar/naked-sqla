@@ -1,0 +1,32 @@
+[project]
+name = "naked_sqla"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["sqlalchemy>=2.0.35", "greenlet>=3.1.1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pyright]
+typeCheckingMode = "standard"
+
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["naked_sqla"]
+
+[tool.setuptools.package-data]
+"naked_sqla" = ["py.typed"]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.6.9",
+    "pyright>=1.1.384",
+    "aiosqlite>=0.20.0",
+    "rich>=13.9.2",
+]
