@@ -80,11 +80,10 @@ async def main():
                 E2(author_id=author4, event="4", created_at=now - timedelta(days=1)),
             ]
 
-            for obj in objs:
-                await session.execute(sa.insert(E1).values(asdict(obj)))
-
-            for obj in parents:
-                await session.execute(sa.insert(E2).values(asdict(obj)))
+            await session.execute(sa.insert(E1).values([asdict(obj) for obj in objs]))
+            await session.execute(
+                sa.insert(E2).values([asdict(obj) for obj in parents])
+            )
 
             query = (
                 sa.select(E1, E2)
@@ -92,8 +91,7 @@ async def main():
                 .where(E1.author_id == E2.author_id)
                 .order_by(E1.event)
             )
-
-            result = (await session.execute(query)).tuples().all()
+            result = (await session.tuples(query)).all()
             print(result)  # updated object
             assert len(result) == 4
             assert result[0][0].event == "1"

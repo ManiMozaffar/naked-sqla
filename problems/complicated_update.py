@@ -88,6 +88,10 @@ async def test():
                 .returning(Event)
             )
 
+            # updated object is correctly returned (has event='2')
+
+            # updated object is not returned (has event='1') !!!!!!
+            # session.expunge_all
             result = (await session.execute(query)).scalars().all()
             print(result)  # updated object
             assert result[0].event == "2"

@@ -107,7 +107,7 @@ async def test():
                 print(result)  # updated object
                 print(objs)  # previous added objects are out of bound!
 
-                assert result[0].event == "2"  # WTF?
+                assert result[0].event == "1"  # WTF?
 
 
 if __name__ == "__main__":
