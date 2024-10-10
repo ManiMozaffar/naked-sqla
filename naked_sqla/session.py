@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
 from typing import Any, Literal, Optional, TypeVar, assert_never, overload
 
-from sqlalchemy.engine import Result
+from sqlalchemy import ScalarResult
+from sqlalchemy.engine import Result, TupleResult
 from sqlalchemy.engine.interfaces import (
     CoreExecuteOptionsParameter,
     _CoreAnyExecuteParams,
@@ -17,13 +18,21 @@ _T = TypeVar("_T", bound=Any)
 
 
 class AsyncSessionFactory:
-    def __init__(self, engine: AsyncEngine):
+    def __init__(self, engine: AsyncEngine, *, auto_commit: bool = True):
         self.engine = engine
+        self.auto_commit = auto_commit
 
     @asynccontextmanager
     async def begin(self):
         async with self.engine.begin() as conn:
-            yield AsyncSession(conn)
+            try:
+                yield AsyncSession(conn)
+                if self.auto_commit:
+                    await conn.commit()
+            except Exception as err:
+                if self.auto_commit:
+                    await conn.rollback()
+                raise err
 
 
 class AsyncSession:
@@ -34,16 +43,20 @@ class AsyncSession:
     async def commit(self):
         if self.state == "closed":
             raise Exception("Session is already closed")
-
-        await self.conn.commit()
-        self.state = "closed"
+        elif self.state == "open":
+            await self.conn.commit()
+            self.state = "closed"
+        else:
+            assert_never(self.state)
 
     async def rollback(self):
         if self.state == "closed":
             raise Exception("Session is already closed")
-
-        await self.conn.rollback()
-        self.state = "closed"
+        elif self.state == "open":
+            await self.conn.rollback()
+            self.state = "closed"
+        else:
+            assert_never(self.state)
 
     @overload
     async def execute(
@@ -89,3 +102,67 @@ class AsyncSession:
 
             case _:
                 assert_never(statement)
+
+    @overload
+    async def tuples(
+        self,
+        statement: TypedReturnsRows[_T],
+        parameters: Optional[_CoreAnyExecuteParams] = None,
+        *,
+        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+    ) -> TupleResult[_T]: ...
+
+    @overload
+    async def tuples(
+        self,
+        statement: Executable,
+        parameters: Optional[_CoreAnyExecuteParams] = None,
+        *,
+        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+    ) -> TupleResult[Any]: ...
+
+    async def tuples(
+        self,
+        statement: Executable,
+        parameters: Optional[_CoreAnyExecuteParams] = None,
+        *,
+        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+    ) -> TupleResult[Any]:
+        result = (
+            await self.execute(
+                statement, parameters, execution_options=execution_options
+            )
+        ).tuples()
+        return result
+
+    @overload
+    async def scalars(
+        self,
+        statement: TypedReturnsRows[_T],
+        parameters: Optional[_CoreAnyExecuteParams] = None,
+        *,
+        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+    ) -> ScalarResult[_T]: ...
+
+    @overload
+    async def scalars(
+        self,
+        statement: Executable,
+        parameters: Optional[_CoreAnyExecuteParams] = None,
+        *,
+        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+    ) -> ScalarResult[Any]: ...
+
+    async def scalars(
+        self,
+        statement: Executable,
+        parameters: Optional[_CoreAnyExecuteParams] = None,
+        *,
+        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+    ) -> ScalarResult[Any]:
+        result = (
+            await self.execute(
+                statement, parameters, execution_options=execution_options
+            )
+        ).scalars()
+        return result
