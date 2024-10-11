@@ -197,6 +197,7 @@ async def test():
             print(unmapped_result)
 
             assert len(result) == 3
+
             assert result[0].event == "1"
             assert result[1].event == "2"
             assert result[2].event == "3"

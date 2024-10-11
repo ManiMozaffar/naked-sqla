@@ -1,14 +1,30 @@
-from typing import Any, TypeVar
+from __future__ import annotations
 
-from sqlalchemy import exc as sa_exc
+import operator
+from typing import TYPE_CHECKING, Any, TypeVar, assert_never
+
 from sqlalchemy import util
 from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.engine.result import ChunkedIteratorResult, Result, SimpleResultMetaData
-from sqlalchemy.orm.context import QueryContext
+from sqlalchemy.orm.context import (
+    _BundleEntity,
+    _ColumnEntity,
+    _MapperEntity,
+    _QueryEntity,
+)
+from sqlalchemy.util import EMPTY_DICT
+
+if TYPE_CHECKING:
+    from naked_sqla.context import QueryContext
+
+    def instance_dict(instance: object) -> dict[str, Any]: ...
+
+else:
+    instance_dict = operator.attrgetter("__dict__")
+
 
 _T = TypeVar("_T", bound=Any)
 _O = TypeVar("_O", bound=object)
-_new_runid = util.counter()
 
 
 def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
@@ -26,15 +42,6 @@ def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
 
     """
 
-    context.runid = _new_runid()
-
-    if context.top_level_context:
-        is_top_level = False
-        context.post_load_paths = context.top_level_context.post_load_paths
-    else:
-        is_top_level = True
-        context.post_load_paths = {}
-
     compile_state = context.compile_state
     filtered = compile_state._has_mapper_entities
     single_entity = (
@@ -47,21 +54,11 @@ def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
         (process, labels, extra) = list(
             zip(
                 *[
-                    query_entity.row_processor(context, cursor)
+                    row_processor(query_entity, context, cursor)
                     for query_entity in context.compile_state._entities
                 ]
             )
         )
-
-        if context.yield_per and (
-            context.loaders_require_buffering or context.loaders_require_uniquing
-        ):
-            raise sa_exc.InvalidRequestError(
-                "Can't use yield_per with eager loaders that require uniquing "
-                "or row buffering, e.g. joinedload() against collections "
-                "or subqueryload().  Consider the selectinload() strategy "
-                "for better flexibility in loading objects."
-            )
 
     except Exception:
         with util.safe_reraise():
@@ -89,40 +86,19 @@ def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
             else:
                 rows = [tuple([proc(row) for proc in process]) for row in fetch]  # type: ignore
 
-            # if we are the originating load from a query, meaning we
-            # aren't being called as a result of a nested "post load",
-            # iterate through all the collected post loaders and fire them
-            # off.  Previously this used to work recursively, however that
-            # prevented deeply nested structures from being loadable
-            if is_top_level:
-                if yield_per:
-                    # if using yield per, memoize the state of the
-                    # collection so that it can be restored
-                    top_level_post_loads = list(context.post_load_paths.items())
-
-                while context.post_load_paths:
-                    post_loads = list(context.post_load_paths.items())
-                    context.post_load_paths.clear()
-                    for path, post_load in post_loads:
-                        post_load.invoke(context, path)
-
-                if yield_per:
-                    context.post_load_paths.clear()
-                    context.post_load_paths.update(top_level_post_loads)  # type: ignore
-
             yield rows
 
             if not yield_per:
                 break
 
-    if context.execution_options.get("prebuffer_rows", False):
-        # this is a bit of a hack at the moment.
-        # I would rather have some option in the result to pre-buffer
-        # internally.
-        _prebuffered = list(chunks(None))
+    # if context.execution_options.get("prebuffer_rows", False):
+    #     # this is a bit of a hack at the moment.
+    #     # I would rather have some option in the result to pre-buffer
+    #     # internally.
+    #     _prebuffered = list(chunks(None))
 
-        def chunks(size):
-            return iter(_prebuffered)
+    #     def chunks(size):
+    #         return iter(_prebuffered)
 
     result = ChunkedIteratorResult(
         row_metadata,
@@ -139,19 +115,98 @@ def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
         dict(filtered=filtered, is_single_entity=single_entity)
     )
 
-    # # multi_row_eager_loaders OTOH is specific to joinedload.
-    # if context.compile_state.multi_row_eager_loaders:
-
-    #     def require_unique(obj):
-    #         raise sa_exc.InvalidRequestError(
-    #             "The unique() method must be invoked on this Result, "
-    #             "as it contains results that include joined eager loads "
-    #             "against collections"
-    #         )
-
-    #     result._unique_filter_state = (None, require_unique)
-
     if context.yield_per:
         result.yield_per(context.yield_per)
 
     return result
+
+
+def row_processor(
+    entity: _QueryEntity | _BundleEntity | _ColumnEntity | _MapperEntity,
+    context: QueryContext,
+    cursor: CursorResult[Any],
+):
+    match entity:
+        case _BundleEntity():
+            return entity.row_processor(context, cursor)
+
+        case _ColumnEntity():
+            return entity.row_processor(context, cursor)
+
+        case _MapperEntity():
+            return entity_row_processor(entity, context, cursor)
+
+        case _QueryEntity():
+            raise Exception("QueryEntity is unknown, what are you trying to select?")
+
+        case _:
+            assert_never(entity)
+
+
+def entity_row_processor(
+    entity: _MapperEntity, context: QueryContext, result: CursorResult[Any]
+):
+    compile_state = context.compile_state
+    adapter = entity._get_entity_clauses(compile_state)
+    _instance = _instance_processor(
+        entity,
+        entity.mapper,
+        context,
+        result,
+        entity.path,
+        adapter,
+    )
+
+    return _instance, entity._label_name, entity._extra_entities
+
+
+def _instance_processor(query_entity, mapper, context, result, path, adapter):
+    """Produce a mapper level row processor callable
+    which processes rows into mapped instances."""
+
+    compile_state = context.compile_state
+    getter_key = ("getters", mapper)
+    getters = path.get(compile_state.attributes, getter_key, None)
+
+    if getters is None:
+        props = mapper._prop_set
+
+        quick_populators = path.get(context.attributes, "memoized_setups", EMPTY_DICT)
+
+        cached_populators = {"quick": []}
+        getters = {"cached_populators": cached_populators, "primary_key_getter": None}
+        for prop in props:
+            if prop in quick_populators:
+                # this is an inlined path just for column-based attributes.
+                col = quick_populators[prop]
+                getter = result._getter(col, False)
+                if getter:
+                    cached_populators["quick"].append((prop.key, getter))
+                else:
+                    # fall back to the ColumnProperty itself, which
+                    # will iterate through all of its columns
+                    # to see if one fits
+                    prop.create_row_processor(
+                        context,
+                        query_entity,
+                        path,
+                        mapper,
+                        result,
+                        adapter,
+                        cached_populators,
+                    )
+
+        path.set(compile_state.attributes, getter_key, getters)
+
+    cached_populators = getters["cached_populators"]
+    populators = {key: list(value) for key, value in cached_populators.items()}
+
+    def _instance(row):
+        instance = mapper.class_manager.new_instance()
+        dict_ = instance_dict(instance)
+
+        for key, getter in populators["quick"]:
+            dict_[key] = getter(row)
+        return instance
+
+    return _instance

@@ -4,8 +4,8 @@ from typing import Any, Literal, Optional, TypeVar, assert_never, overload
 from sqlalchemy import ScalarResult
 from sqlalchemy.engine import Result, TupleResult
 from sqlalchemy.engine.interfaces import (
-    CoreExecuteOptionsParameter,
     _CoreAnyExecuteParams,
+    _CoreKnownExecutionOptions,
 )
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from sqlalchemy.sql import dml
@@ -64,7 +64,7 @@ class AsyncSession:
         statement: TypedReturnsRows[_T],
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> Result[_T]: ...
 
     @overload
@@ -73,7 +73,7 @@ class AsyncSession:
         statement: Executable,
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> Result[Any]: ...
 
     async def execute(
@@ -81,7 +81,7 @@ class AsyncSession:
         statement: Executable,
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> Result[Any]:
         match statement:
             case dml.Insert() | dml.Update() | dml.Delete():
@@ -109,7 +109,7 @@ class AsyncSession:
         statement: TypedReturnsRows[_T],
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> TupleResult[_T]: ...
 
     @overload
@@ -118,7 +118,7 @@ class AsyncSession:
         statement: Executable,
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> TupleResult[Any]: ...
 
     async def tuples(
@@ -126,7 +126,7 @@ class AsyncSession:
         statement: Executable,
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> TupleResult[Any]:
         result = (
             await self.execute(
@@ -141,7 +141,7 @@ class AsyncSession:
         statement: TypedReturnsRows[_T],
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> ScalarResult[_T]: ...
 
     @overload
@@ -150,7 +150,7 @@ class AsyncSession:
         statement: Executable,
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> ScalarResult[Any]: ...
 
     async def scalars(
@@ -158,7 +158,7 @@ class AsyncSession:
         statement: Executable,
         parameters: Optional[_CoreAnyExecuteParams] = None,
         *,
-        execution_options: Optional[CoreExecuteOptionsParameter] = None,
+        execution_options: Optional[_CoreKnownExecutionOptions] = None,
     ) -> ScalarResult[Any]:
         result = (
             await self.execute(

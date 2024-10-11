@@ -64,7 +64,7 @@ async def test():
                 ),
             ]
 
-            await session.conn.execute(sa.insert(Event), [obj.__dict__ for obj in objs])
+            await session.execute(sa.insert(Event), [obj.__dict__ for obj in objs])
 
             # updating the event that comes before the event with the value '2' to value '2'
             event_lead = sa.select(
