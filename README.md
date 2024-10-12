@@ -2,6 +2,10 @@
 
 Naked SQLAlchemy is a simple and efficient layer on top of SQLAlchemy Core, designed to make database access faster and easier by focusing on query execution and result mapping to data classes.
 
+## Help
+
+See [documentation](https://manimozaffar.github.io/naked-sqla/latest/) for more details.
+
 ## Key Features
 
 - **Dataclass Mapping**: Automatically map query results directly to Python dataclasses, eliminating the need for manual mapping.

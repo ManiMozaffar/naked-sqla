@@ -2,7 +2,7 @@ import logging
 import subprocess
 import sys
 
-from naked_sqla import __version__
+from naked_sqla.__version__ import __version__
 
 logger = logging.getLogger(__name__)
 
