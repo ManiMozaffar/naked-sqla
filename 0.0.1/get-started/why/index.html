@@ -18,7 +18,7 @@
         <link rel="prev" href="../..">
       
       
-        <link rel="next" href="../../api/session/">
+        <link rel="next" href="../migration/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -475,6 +475,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Migrating from SQLAlchemy
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -966,6 +987,8 @@ This of course make sense if you think about it, because the object is not in th
 </ol>
 <p>but there's one small issue with using Core, it does not map the result of query to a dataclass. So imagine you write a query such as <code>sa.select(User)</code>, what happens is that it return you a tuple of rows, where each row is a tuple of columns. So you need to manually map the result to a dataclass.</p>
 <p>And that's what this library is for! Naked SQLAlchemy is a library that provides a thin layer on top of SQLAlchemy Core to make it easier to work with databases in Python. It simplifies the process of executing queries, and mapping results to data classes. The new "ORM" or Object mapper I call it I wrote, the first working version was 500 lines of code only, which is about ~30 times less than SQLAlchemy code, and significantly faster and more efficient, because it's doing only what it should do, and nothing more.</p>
+<p>As you can see, Naked SQLALchemy is almost 2 times faster than ORM, Althought as expected, core is still way faster because it does less!
+<img alt="Benchmark" src="../../images/benchmark.png" /></p>
 <blockquote>
 <p>The key to making programs fast is to make them do practically nothing.</p>
 <p>-- <cite>Mike Haertel, Author of GNU grep</cite></p>
