@@ -1,5 +1,5 @@
 site_name: Naked SQLAlchemy
-site_description: A lightweight object mapper around SQLAlchemy core.
+site_description: A simple and lightweight object mapper around SQLAlchemy core.
 repo_url: https://github.com/ManiMozaffar/naked-sqla
 site_url: https://ManiMozaffar.github.io/naked-sqla
 site_author: Mani Mozaffar

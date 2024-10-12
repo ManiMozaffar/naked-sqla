@@ -1,10 +1,19 @@
 [project]
 name = "naked_sqla"
 version = "0.1.0"
-description = "Add your description here"
+description = "A simple and lightweight object mapper around SQLAlchemy core."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["sqlalchemy>=2.0.0", "typing-extensions>=4.0"]
+license = 'MIT'
+
+
+[project.urls]
+repository = "https://github.com/ManiMozaffar/naked-sqla"
+Homepage = 'https://github.com/ManiMozaffar/naked-sqla'
+Documentation = 'https://github.com/ManiMozaffar/naked-sqla'
+Source = 'https://github.com/ManiMozaffar/naked-sqla'
+
 
 [build-system]
 requires = ["hatchling"]
