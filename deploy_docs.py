@@ -23,4 +23,5 @@ if __name__ == "__main__":
     run_command(command)
 
     command = f"mike deploy --push --update-aliases {__version__} latest"
+
     run_command(command)

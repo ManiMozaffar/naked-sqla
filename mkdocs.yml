@@ -102,6 +102,7 @@ nav:
   - Get Started:
       - Welcome to Naked SQLA: index.md
       - Philosophy: get-started/why.md
+      - Migrating from SQLAlchemy: get-started/migration.md
 
   - API Reference:
       - Session: api/session.md

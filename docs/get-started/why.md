@@ -261,7 +261,10 @@ Compare these wins, to negative sides of ORM; what if we use SQL very explicitly
 
 but there's one small issue with using Core, it does not map the result of query to a dataclass. So imagine you write a query such as `sa.select(User)`, what happens is that it return you a tuple of rows, where each row is a tuple of columns. So you need to manually map the result to a dataclass.
 
-And that's what this library is for! Naked SQLAlchemy is a library that provides a thin layer on top of SQLAlchemy Core to make it easier to work with databases in Python. It simplifies the process of executing queries, and mapping results to data classes. The new "ORM" or Object mapper I call it I wrote, the first working version was 500 lines of code only, which is about ~30 times less than SQLAlchemy code, and significantly faster and more efficient, because it's doing only what it should do, and nothing more.
+And that's what this library is for! Naked SQLAlchemy provides a thin layer on top of SQLAlchemy Core to make it easier to work with databases in Python. It simplifies the process of executing queries and mapping results to data classes. By bypassing sessions, increasing speed, avoiding incorrect results, and eliminating implicit behaviors, it addresses the exact limitations that often cause issues in traditional ORMs. The new "ORM" or object mapper I wrote is only 500 lines of code in its first working version, which is about 30 times less than SQLAlchemy's codebase, and it's significantly faster and more efficient because it does only what it should do, and nothing more. It's not just about speed; traditional ORMs have many pitfalls due to their implicit behaviors, making them harder to understand and more likely to cause bugs. This library bridges over these issues and provides a more straightforward, explicit way to interact with your database.
+
+As you can see, Naked SQLALchemy is almost 2 times faster than ORM, Althought as expected, core is still way faster because it does less!
+![Benchmark](../images/benchmark.png)
 
 > The key to making programs fast is to make them do practically nothing.
 >

@@ -14,7 +14,7 @@ Naked SQLAlchemy is ideal for developers who want the power and flexibility of S
 ### Installation
 
 ```bash
-pip install naked-sqlalchemy
+pip install naked-sqla
 ```
 
 ### Attention
