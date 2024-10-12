@@ -741,7 +741,7 @@
 <li>Stop using session.refresh(...), and instead use explicit SELECT queries.</li>
 <li>Remove relationship and back_populates.</li>
 </ol>
-<p>Imagine for this ORM Object; we want to insert a new record:</p>
+<p>Assume you have the following models defined using SQLAlchemy ORM, and you want to migrate to naked-sqla:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># models.py</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">sqlalchemy.ext.declarative</span> <span class="kn">import</span> <span class="n">declarative_base</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">String</span>
