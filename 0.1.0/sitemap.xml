@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://ManiMozaffar.github.io/naked-sqla/latest/</loc>
+         <lastmod>2024-10-12</lastmod>
+    </url>
+    <url>
+         <loc>https://ManiMozaffar.github.io/naked-sqla/latest/api/async-session/</loc>
+         <lastmod>2024-10-12</lastmod>
+    </url>
+    <url>
+         <loc>https://ManiMozaffar.github.io/naked-sqla/latest/api/session/</loc>
+         <lastmod>2024-10-12</lastmod>
+    </url>
+    <url>
+         <loc>https://ManiMozaffar.github.io/naked-sqla/latest/api/view/</loc>
+         <lastmod>2024-10-12</lastmod>
+    </url>
+    <url>
+         <loc>https://ManiMozaffar.github.io/naked-sqla/latest/get-started/migration/</loc>
+         <lastmod>2024-10-12</lastmod>
+    </url>
+    <url>
+         <loc>https://ManiMozaffar.github.io/naked-sqla/latest/get-started/why/</loc>
+         <lastmod>2024-10-12</lastmod>
+    </url>
+</urlset>
