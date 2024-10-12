@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, TypeVar, assert_never
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from sqlalchemy import util
 from sqlalchemy.engine.cursor import CursorResult
@@ -13,14 +13,30 @@ from sqlalchemy.orm.context import (
     _QueryEntity,
 )
 from sqlalchemy.util import EMPTY_DICT
+from typing_extensions import assert_never
+
+from naked_sqla.exception import BaseNakedSQLAException
 
 if TYPE_CHECKING:
-    from naked_sqla.context import QueryContext
+    from naked_sqla.om.context import QueryContext
 
     def instance_dict(instance: object) -> dict[str, Any]: ...
 
 else:
     instance_dict = operator.attrgetter("__dict__")
+
+
+class UnknownEntity(BaseNakedSQLAException):
+    def __init__(self, entity: _QueryEntity):
+        super().__init__(
+            f"""Unknown entity: {entity!r}.
+This means you had an entity in your query that could not be known by the OM.
+
+Might be caused by using an external library beside sqlalchemy or using a custom entity.
+If you only selected column, object or bundle, please report this issue in github.
+https://github.com/ManiMozaffar/naked-sqla
+            """
+        )
 
 
 _T = TypeVar("_T", bound=Any)
@@ -122,28 +138,23 @@ def instances(cursor: CursorResult[Any], context: QueryContext) -> Result[Any]:
 
 
 def row_processor(
-    entity: _QueryEntity | _BundleEntity | _ColumnEntity | _MapperEntity,
+    entity: Union[_QueryEntity, _BundleEntity, _ColumnEntity, _MapperEntity],
     context: QueryContext,
     cursor: CursorResult[Any],
 ):
-    match entity:
-        case _BundleEntity():
-            return entity.row_processor(context, cursor)
-
-        case _ColumnEntity():
-            return entity.row_processor(context, cursor)
-
-        case _MapperEntity():
-            return entity_row_processor(entity, context, cursor)
-
-        case _QueryEntity():
-            raise Exception("QueryEntity is unknown, what are you trying to select?")
-
-        case _:
-            assert_never(entity)
+    if isinstance(entity, _BundleEntity):
+        return entity.row_processor(context, cursor)
+    elif isinstance(entity, _MapperEntity):
+        return mapper_entity_row_processor(entity, context, cursor)
+    elif isinstance(entity, _ColumnEntity):
+        return entity.row_processor(context, cursor)
+    elif isinstance(entity, _QueryEntity):
+        raise UnknownEntity(entity)
+    else:
+        assert_never(entity)
 
 
-def entity_row_processor(
+def mapper_entity_row_processor(
     entity: _MapperEntity, context: QueryContext, result: CursorResult[Any]
 ):
     compile_state = context.compile_state

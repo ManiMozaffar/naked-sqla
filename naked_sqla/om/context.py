@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Type, TypeVar, Union
 
-from sqlalchemy import util
+from sqlalchemy import Connection, util
 from sqlalchemy.engine.interfaces import (
     _CoreAnyExecuteParams,
     _CoreKnownExecutionOptions,
@@ -13,7 +13,7 @@ from sqlalchemy.orm.context import FromStatement, ORMCompileState
 from sqlalchemy.sql.base import CompileState, Executable, Options
 from sqlalchemy.sql.selectable import Select, SelectLabelStyle
 
-from naked_sqla.loading import instances
+from naked_sqla.om.loading import instances
 
 _BindArguments = dict[str, Any]
 
@@ -77,6 +77,39 @@ async def orm_execute_statement(
     execution_options: Optional[_CoreKnownExecutionOptions] = None,
 ):
     result = await conn.execute(
+        statement,
+        parameters=parameters,
+        execution_options=execution_options,
+    )
+    execution_context = result.context
+    assert execution_context.compiled
+    compile_state = execution_context.compiled.compile_state
+    assert compile_state
+
+    execution_options = execution_options or {}
+    load_options = execution_options.get(  # type: ignore
+        "_sa_orm_load_options", QueryContext.default_load_options
+    )
+
+    querycontext = QueryContext(
+        compile_state,
+        compile_state.statement,
+        compile_state.statement,
+        {},
+        load_options,
+        execution_options,
+        None,
+    )
+    return instances(result, querycontext)
+
+
+def sync_orm_execute_statement(
+    conn: Connection,
+    statement: Executable,
+    parameters: Optional[_CoreAnyExecuteParams] = None,
+    execution_options: Optional[_CoreKnownExecutionOptions] = None,
+):
+    result = conn.execute(
         statement,
         parameters=parameters,
         execution_options=execution_options,
